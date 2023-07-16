@@ -1,7 +1,7 @@
 # Traefik
 Traefik Docker-Compose setup
 ## Prerequisites
-* Docker installed
+* Docker & Docker-Compose installed
 * Docker Socket Proxy
 ### Create Network
 #### Frontend
