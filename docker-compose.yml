@@ -1,0 +1,52 @@
+version: "1.0"
+
+services:
+  traefik:
+    container_name: traefik
+    image: "traefik:2.4"
+    user: "5000:5000"
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --providers.docker
+      - --providers.docker.endpoint=tcp://dockerproxy:2375
+      - --log.level=ERROR
+      - --certificatesresolvers.leresolver.acme.httpchallenge=true
+      - --certificatesresolvers.leresolver.acme.email=<EMAIL> #Set your email address here, is for the generation of SSL certificates with Let's Encrypt.
+      - --certificatesresolvers.leresolver.acme.storage=./acme.json
+      - --certificatesresolvers.leresolver.acme.httpchallenge.entrypoint=web
+      - --providers.docker.exposedbydefault=false
+    environment:
+      - TZ=Indian/Mauritius
+    networks:
+      - socket
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./acme.json:/acme.json"
+      - "./conf:/etc/traefik/"
+    labels:
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+        # - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://authelia.example.com/" #Change the authelia url
+        # - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+        # - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User, Remote-Groups, Remote-Name, Remote-Email"
+        # - "traefik.http.middlewares.authelia-basic.forwardauth.address=http://authelia:9091/api/verify?auth=basic"
+        # - "traefik.http.middlewares.authelia-basic.forwardauth.trustForwardHeader=true"
+        # - "traefik.http.middlewares.authelia-basic.forwardauth.authResponseHeaders=Remote-User, Remote-Groups, Remote-Name, Remote-Email"
+    restart: unless-stopped
+
+networks:
+  default:
+  frontend:
+    external:
+      name: frontend
+  socket:
+    external: true
